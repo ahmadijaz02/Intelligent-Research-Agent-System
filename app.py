@@ -625,11 +625,14 @@ def extract_url(raw):
 
 def classify_error(exc):
     msg = str(exc)
-    if "503" in msg or "UNAVAILABLE" in msg.upper() or "overloaded" in msg.lower():
+    low = msg.lower()
+    if "missing api key" in low or "missing credentials" in low or "openai_api_key" in low or "google_api_key" in low or "cohere_api_key" in low or "groq_api_key" in low:
+        return "missing_key", "This provider's API key isn't set. Add it to your `.env` file (or pick a different provider in the sidebar) and restart."
+    if "503" in msg or "UNAVAILABLE" in msg.upper() or "overloaded" in low:
         return "overload", "The model provider is temporarily overloaded. This is usually transient — try again in a moment."
-    if "429" in msg or "rate limit" in msg.lower() or "quota" in msg.lower():
-        return "rate_limit", "Rate limit or quota exceeded. Wait a minute and retry, or check your API dashboard."
-    if "401" in msg or "403" in msg or "api key" in msg.lower() or "unauthorized" in msg.lower():
+    if "429" in msg or "rate limit" in low or "quota" in low:
+        return "rate_limit", "Rate limit or quota exceeded. Switch provider from the sidebar, or wait and retry."
+    if "401" in msg or "403" in msg or "api key" in low or "unauthorized" in low:
         return "auth", "Authentication failed. Check that your API keys in `.env` are valid and have access."
     if "model" in msg.lower() and ("not found" in msg.lower() or "404" in msg):
         return "model", "The model identifier isn't available on your account. Pick a different model in `agents.py`."
@@ -689,7 +692,7 @@ def render_running_card(icon, name, model, status_text, elapsed=None, tip=None):
 
 def render_error_card(icon, name, model, exc):
     kind, hint = classify_error(exc)
-    label = {"overload":"Model Overloaded","rate_limit":"Rate Limit Hit","auth":"Auth Failed","model":"Model Not Found","timeout":"Timeout","unknown":"Error"}[kind]
+    label = {"overload":"Model Overloaded","rate_limit":"Rate Limit Hit","auth":"Auth Failed","model":"Model Not Found","timeout":"Timeout","missing_key":"Missing API Key","unknown":"Error"}[kind]
     return f"""<div class="agent-card error"><div class="agent-card-head">
       <div class="agent-icon-wrap" style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2);color:#ef4444"><i class="ti ti-alert-triangle"></i></div>
       <span class="agent-name">{name}</span><span class="agent-model-tag">{model}</span>
@@ -730,14 +733,27 @@ with st.sidebar:
             st.rerun()
 
     st.markdown('<div class="sb-sect-label"><i class="ti ti-cpu" style="font-size:12px"></i>Models · per agent</div>', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.72rem;color:#64748b;line-height:1.5;margin-bottom:10px">Switch providers any time. Requires the matching API key in <code style="background:#eef;padding:1px 4px;border-radius:3px">.env</code>.</div>', unsafe_allow_html=True)
+    providers = available_providers()
+    missing = [p for p in MODEL_CATALOG if p not in providers]
+    if not providers:
+        st.markdown('<div style="font-size:0.75rem;color:#dc2626;line-height:1.5;margin-bottom:10px">No API keys found. Add at least one of GROQ_API_KEY, GOOGLE_API_KEY, COHERE_API_KEY, or OPENAI_API_KEY to your <code>.env</code>.</div>', unsafe_allow_html=True)
+    else:
+        hint = "Only providers with API keys in <code>.env</code> are shown."
+        if missing:
+            hint += f" Missing: {', '.join(missing)}."
+        st.markdown(f'<div style="font-size:0.72rem;color:#64748b;line-height:1.5;margin-bottom:10px">{hint}</div>', unsafe_allow_html=True)
+
     stage_labels = {"search":"Search","reader":"Reader","writer":"Writer","critic":"Critic"}
-    providers = list(MODEL_CATALOG.keys())
     for stage, lbl in stage_labels.items():
+        if not providers:
+            break
         current = st.session_state.model_picks[stage]
+        if current["provider"] not in providers:
+            current["provider"] = providers[0]
+            current["model"] = MODEL_CATALOG[providers[0]][0]
         prov = st.selectbox(
             f"{lbl} provider", providers,
-            index=providers.index(current["provider"]) if current["provider"] in providers else 0,
+            index=providers.index(current["provider"]),
             key=f"prov_{stage}", label_visibility="visible",
         )
         models = MODEL_CATALOG[prov]
