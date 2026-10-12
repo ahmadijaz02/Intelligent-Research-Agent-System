@@ -19,6 +19,13 @@ load_dotenv()
 
 tavily = TavilyClient(api_key=os.getenv('TAVILY_API_KEY'))
 
+_embeddings = None
+def get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        _embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    return _embeddings
+
 @tool 
 def web_search(query: str) -> str:
     """ Search the web for recent and reliable information on a topic. Return Titles, URL 
@@ -63,23 +70,25 @@ def scrape_web_pages(urls: list[str], query: str = "") -> str:
         return "No readable text found on any of the provided pages."
         
     combined_results = []
-    
-    for url, content in scraped_data.items():
-        if query:
-            # Implement RAG (Chunking + Vector Store)
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-            docs = text_splitter.create_documents([content])
-            
-            # Using free HuggingFace embeddings
-            embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-            vectorstore = FAISS.from_documents(docs, embeddings)
-            
-            # Retrieve top 2 most relevant chunks per URL to save space
-            docs_retrieved = vectorstore.similarity_search(query, k=2)
-            retrieved_text = "\n\n...\n\n".join([doc.page_content for doc in docs_retrieved])
-            combined_results.append(f"Relevant Extracts from {url}:\n{retrieved_text}")
-        else:
-            combined_results.append(f"Content from {url}:\n{content[:2000]}") # Return up to 2000 chars per url
+
+    if query:
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+        all_docs = []
+        for url, content in scraped_data.items():
+            docs = text_splitter.create_documents([content], metadatas=[{"url": url}])
+            all_docs.extend(docs)
+
+        if all_docs:
+            vectorstore = FAISS.from_documents(all_docs, get_embeddings())
+            docs_retrieved = vectorstore.similarity_search(query, k=min(4, len(all_docs)))
+            grouped = {}
+            for doc in docs_retrieved:
+                grouped.setdefault(doc.metadata["url"], []).append(doc.page_content)
+            for url, chunks in grouped.items():
+                combined_results.append(f"Relevant Extracts from {url}:\n" + "\n\n...\n\n".join(chunks))
+    else:
+        for url, content in scraped_data.items():
+            combined_results.append(f"Content from {url}:\n{content[:2000]}")
             
     return "\n\n" + "="*40 + "\n\n".join(combined_results)
 

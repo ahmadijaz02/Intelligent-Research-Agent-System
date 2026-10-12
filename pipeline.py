@@ -60,7 +60,7 @@ def should_continue(state: AgentState):
     feedback = state.get("feedback", "")
     revision_count = state.get("revision_count", 0)
     
-    if revision_count >= 3:
+    if revision_count >= 1:
         print("\nMax revisions reached. Ending pipeline.")
         return "end"
 
