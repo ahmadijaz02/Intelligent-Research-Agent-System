@@ -21,14 +21,21 @@
 
 *A production-ready multi-agent system that autonomously searches, scrapes, synthesizes, and critiques research on any topic.*
 
-[Features](#-features) • [Architecture](#-system-architecture) • [Installation](#-installation) • [Usage](#-usage) • [API Reference](#-api-reference) • [Contributing](#-contributing)
+[Live Demo](#-live-demo) • [Features](#-features) • [Architecture](#-system-architecture) • [Installation](#-installation) • [Usage](#-usage) • [API Reference](#-api-reference) • [Contributing](#-contributing)
 
 </div>
 
 ---
 
+## 🌐 Live Demo
+
+Try the deployed application: **[Intelligent Research Agent System — Live Streamlit App](https://intelligent-research-agent.streamlit.app/)**.
+
+Use the web interface to run the research workflow without launching the app locally. API keys and runtime requirements may depend on the deployed app's configuration.
+
 ## 📋 Table of Contents
 
+- [Live Demo](#-live-demo)
 - [Overview](#-overview)
 - [Why Multi-Agent?](#-why-multi-agent-vs-traditional-rag)
 - [System Architecture](#-system-architecture)
