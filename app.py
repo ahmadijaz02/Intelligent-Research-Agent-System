@@ -49,7 +49,7 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stMain"]{
 }
 [data-testid="stAppViewContainer"]>.main{padding:0!important}
 [data-testid="stMain"]>div:first-child{padding:0!important}
-.block-container{padding:0!important;max-width:100%!important}
+.block-container{padding:0 48px!important;max-width:1180px!important;margin:0 auto!important}
 [data-testid="stDecoration"]{display:none}
 [data-testid="stHeader"]{background:transparent}
 
@@ -1041,7 +1041,6 @@ if start_research and topic:
 # ─────────── RESULTS ───────────
 if st.session_state.state.get("report") and not (start_research and topic):
     et = st.session_state.execution_times
-    st.markdown('<div class="research-wrap">', unsafe_allow_html=True)
 
     # Topic header
     st.markdown(f"""<div class="result-header">

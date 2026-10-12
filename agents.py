@@ -56,7 +56,7 @@ MODEL_CATALOG = {
 # Default pick per stage: (provider, model)
 DEFAULT_MODELS = {
     "search": ("Groq", "openai/gpt-oss-20b"),
-    "reader": ("Google Gemini", "gemini-flash-latest"),
+    "reader": ("Cohere", "command-a-03-2025"),
     "writer": ("Cohere", "command-a-03-2025"),
     "critic": ("Groq", "openai/gpt-oss-20b"),
 }
